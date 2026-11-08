@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AulaSTEAM - Registro de Equipos</title>
+  <!-- Librería para activar la cámara del iPad/Móvil -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 { text-align: center; color: #4da6ff; }
+    .card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: white;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    #reader {
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #0080ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:active { background: #0059b3; }
+    .btn-cam {
+      background: #28a745;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AulaSTEAM</h1>
+
+  <div class="card">
+    <h2>Escáner y Registro de Préstamos</h2>
+    
+    <label for="docenteInput">Docente / Profesor/a:</label>
+    <input type="text" id="docenteInput" placeholder="Escribe tu nombre aquí...">
+
+    <label for="equipoInput">Código del Equipo Escaneado:</label>
+    <input type="text" id="equipoInput" placeholder="Escanea o escribe el código (ej. CAR-PORT)">
+
+    <button type="button" class="btn-cam" onclick="iniciarCamara()">📷 Abrir / Activar Cámara</button>
+    <div id="reader"></div>
+
+    <button type="button" id="btnGuardar">Registrar Préstamo</button>
+  </div>
+
+  <script>
+    // Enlace de tu despliegue de Google Apps Script
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbydTbUNUR6yO0yOdKixFUWoNo4OrpT3X8ftYfRAn6-IaBdyPeqjs1Wq1Xz7tqsCi2gh/exec";
+
+    let html5QrcodeScanner = null;
+
+    // Función para activar la cámara
+    function iniciarCamara() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear();
+      }
+      html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+      html5QrcodeScanner.render((decodedText) => {
+        document.getElementById("equipoInput").value = decodedText;
+        alert("✅ Código detectado: " + decodedText);
+        html5QrcodeScanner.clear();
+      }, (error) => {
+        // Escaneando...
+      });
+    }
+
+    // Evento para enviar a Google Sheets
+    document.getElementById("btnGuardar").addEventListener("click", function() {
+      const docente = document.getElementById("docenteInput").value.trim();
+      const equipo = document.getElementById("equipoInput").value.trim();
+
+      if (!docente) {
+        alert("⚠️ Por favor, introduce el nombre del docente.");
+        return;
+      }
+
+      if (!equipo) {
+        alert("⚠️ Por favor, escanea o escribe el código del equipo.");
+        return;
+      }
+
+      const datos = {
+        equipo: equipo,
+        docente: docente,
+        accion: "Préstamo"
+      };
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(datos)
+      })
+      .then(() => {
+        alert("✅ ¡Préstamo registrado con éxito en Google Sheets!");
+        document.getElementById("docenteInput").value = "";
+        document.getElementById("equipoInput").value = "";
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("❌ Error de red al conectar con Google Sheets.");
+      });
+    });
+  </script>
+</body>
+</html>
